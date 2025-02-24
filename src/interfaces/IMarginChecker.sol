@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {PoolId} from "v4-core/types/PoolId.sol";
-import {MarginPosition, MarginPositionVo, BurnParams} from "../types/MarginPosition.sol";
+import {MarginPosition, MarginPositionVo} from "../types/MarginPosition.sol";
+import {BorrowPosition, BorrowPositionVo} from "../types/BorrowPosition.sol";
+import {BurnParams} from "../types/BurnParams.sol";
 
 interface IMarginChecker {
     /// @notice Get the profit millionth of the caller and the protocol
@@ -41,7 +43,7 @@ interface IMarginChecker {
         view
         returns (uint256 reserveBorrow, uint256 reserveMargin);
 
-    /// @notice Check if the position is liquidated
+    /// @notice Check if the margin position is liquidated
     /// @param manager The position manager address
     /// @param positionId The position id
     /// @return liquidated  If the position is liquidated
@@ -51,12 +53,32 @@ interface IMarginChecker {
         view
         returns (bool liquidated, uint256 borrowAmount);
 
+    /// @notice Check if the borrow position is liquidated
+    /// @param manager The borrow position manager address
+    /// @param positionId The position id
+    /// @return liquidated  If the position is liquidated
+    /// @return borrowAmount  The borrow amount of the position
+    function checkBorrowLiquidate(address manager, uint256 positionId)
+        external
+        view
+        returns (bool liquidated, uint256 borrowAmount);
+
     /// @notice Check if the position is liquidated
-    /// @param _position The position to check
+    /// @param _position The margin position to check
     /// @param hook The hook address
     /// @return liquidated  If the position is liquidated
     /// @return borrowAmount  The borrow amount of the position
     function checkLiquidate(MarginPosition memory _position, address hook)
+        external
+        view
+        returns (bool liquidated, uint256 borrowAmount);
+
+    /// @notice Check if the position is liquidated
+    /// @param _position The borrow position to check
+    /// @param hook The hook address
+    /// @return liquidated  If the position is liquidated
+    /// @return borrowAmount  The borrow amount of the position
+    function checkLiquidate(BorrowPosition memory _position, address hook)
         external
         view
         returns (bool liquidated, uint256 borrowAmount);
@@ -79,6 +101,18 @@ interface IMarginChecker {
     /// @return liquidatedList  The liquidated list
     /// @return borrowAmountList  The borrow amount list
     function checkLiquidate(PoolId poolId, bool marginForOne, address hook, MarginPosition[] memory inPositions)
+        external
+        view
+        returns (bool[] memory liquidatedList, uint256[] memory borrowAmountList);
+
+    /// @notice Check if the position is liquidated
+    /// @param poolId The pool id
+    /// @param marginForOne If the margin is for one
+    /// @param hook The hook address
+    /// @param inPositions The input positions
+    /// @return liquidatedList  The liquidated list
+    /// @return borrowAmountList  The borrow amount list
+    function checkLiquidate(PoolId poolId, bool marginForOne, address hook, BorrowPosition[] memory inPositions)
         external
         view
         returns (bool[] memory liquidatedList, uint256[] memory borrowAmountList);

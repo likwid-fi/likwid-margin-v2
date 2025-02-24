@@ -25,6 +25,7 @@ contract MarginFees is IMarginFees, Owned {
     uint256 public constant YEAR_SECONDS = 365 * 24 * 3600;
 
     uint24 public constant liquidationMarginLevel = 1100000; // 110%
+    uint24 public minMarginLevel = 1170000; // 117%
     uint24 public marginFee = 3000; // 0.3%
     uint24 public dynamicFeeDurationSeconds = 120;
     uint24 public dynamicFeeUnit = 10;
@@ -167,5 +168,9 @@ contract MarginFees is IMarginFees, Owned {
 
     function setDynamicFeeUnit(uint24 _dynamicFeeUnit) external onlyOwner {
         dynamicFeeUnit = _dynamicFeeUnit;
+    }
+
+    function setMinMarginLevel(uint24 _minMarginLevel) external onlyOwner {
+        minMarginLevel = _minMarginLevel;
     }
 }

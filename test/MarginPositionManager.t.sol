@@ -8,7 +8,8 @@ import {MarginPositionManager} from "../src/MarginPositionManager.sol";
 import {MarginRouter} from "../src/MarginRouter.sol";
 import {HookStatus} from "../src/types/HookStatus.sol";
 import {MarginParams} from "../src/types/MarginParams.sol";
-import {MarginPosition, MarginPositionVo, BurnParams} from "../src/types/MarginPosition.sol";
+import {MarginPosition, MarginPositionVo} from "../src/types/MarginPosition.sol";
+import {BurnParams} from "../src/types/BurnParams.sol";
 import {AddLiquidityParams, RemoveLiquidityParams} from "../src/types/LiquidityParams.sol";
 // Solmate
 import {MockERC20} from "solmate/src/test/utils/mocks/MockERC20.sol";
