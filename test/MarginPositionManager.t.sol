@@ -290,7 +290,7 @@ contract MarginPositionManagerTest is DeployHelper {
             deadline: block.timestamp + 1000
         });
         payValue = 0.001 ether;
-        vm.expectPartialRevert(MarginPositionManager.InsufficientAmount.selector);
+        vm.expectPartialRevert(MarginPositionManager.MarginTransferFailed.selector);
         (positionId, borrowAmount) = marginPositionManager.margin{value: payValue}(params);
         vm.stopPrank();
     }

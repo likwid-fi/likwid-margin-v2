@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import {PoolId} from "v4-core/types/PoolId.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {BorrowPosition} from "../types/BorrowPosition.sol";
-import {MarginParams} from "../types/MarginParams.sol";
+import {BorrowParams} from "../types/BorrowParams.sol";
 
 interface IBorrowPositionManager is IERC721 {
     /// @notice Return the address of the hook contract
@@ -29,7 +29,7 @@ interface IBorrowPositionManager is IERC721 {
     /// @param params The parameters of the margin position
     /// @return positionId The ID of the margin position
     /// @return borrowAmount The borrow amount
-    function borrow(MarginParams memory params) external payable returns (uint256, uint256);
+    function borrow(BorrowParams memory params) external payable returns (uint256, uint256);
 
     /// @notice Release the margin position by repaying the debt
     /// @param positionId The id of position

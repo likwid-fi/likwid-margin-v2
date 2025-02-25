@@ -87,6 +87,7 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
 
     mapping(PoolId => HookStatus) public hookStatusStore;
     mapping(address => bool) public positionManagers;
+    mapping(PoolId => uint256) public liquidityBlock;
 
     IMarginFees public marginFees;
 
@@ -356,6 +357,7 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         returns (uint256 liquidity)
     {
         require(params.amount0 > 0 && params.amount1 > 0, "AMOUNT_ERR");
+        liquidityBlock[params.poolId] = block.number;
         HookStatus memory status = getStatus(params.poolId);
         _setBalances(status.key);
         uint256 uPoolId = marginLiquidity.getPoolId(params.poolId);
@@ -412,6 +414,7 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         ensure(params.deadline)
         returns (uint256 amount0, uint256 amount1)
     {
+        require(liquidityBlock[params.poolId] < block.number, "NOT_ALLOW");
         HookStatus memory status = getStatus(params.poolId);
         _setBalances(status.key);
         uint256 uPoolId = marginLiquidity.getPoolId(params.poolId);
@@ -528,8 +531,12 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         } else {
             uint24 minMarginLevel = marginFees.minMarginLevel();
             marginWithoutFee = params.marginAmount * ONE_MILLION / minMarginLevel;
-            uint256 borrowMaxAmount = _getAmountIn(status, params.marginForOne, marginWithoutFee);
-            borrowAmount = Math.min(borrowMaxAmount, params.borrowAmount);
+            uint256 borrowMaxAmount = _getAmountOut(status, !params.marginForOne, marginWithoutFee);
+            if (params.borrowAmount > 0) {
+                borrowAmount = Math.min(borrowMaxAmount, params.borrowAmount);
+            } else {
+                borrowAmount = borrowMaxAmount;
+            }
             borrowCurrency.settle(poolManager, address(this), borrowAmount, true);
             borrowCurrency.take(poolManager, params.recipient, borrowAmount, false);
         }

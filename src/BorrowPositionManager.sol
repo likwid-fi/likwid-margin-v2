@@ -15,6 +15,7 @@ import {IMarginChecker} from "./interfaces/IMarginChecker.sol";
 import {BorrowPosition, BorrowPositionVo} from "./types/BorrowPosition.sol";
 import {BurnParams} from "./types/BurnParams.sol";
 import {HookStatus} from "./types/HookStatus.sol";
+import {BorrowParams} from "./types/BorrowParams.sol";
 import {MarginParams} from "./types/MarginParams.sol";
 import {ReleaseParams} from "./types/ReleaseParams.sol";
 import {Math} from "./libraries/Math.sol";
@@ -160,7 +161,7 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
             (_status.realReserve0 + _status.mirrorReserve0, _status.realReserve1 + _status.mirrorReserve1);
         (uint256 reserveBorrow, uint256 reserveMargin) =
             params.marginForOne ? (reserve0, reserve1) : (reserve1, reserve0);
-        uint256 debtAmount = reserveMargin * params.borrowAmount / reserveBorrow;
+        uint256 debtAmount = reserveMargin * params.borrowAmount / (reserveBorrow - params.borrowAmount) + 1;
         valid = params.marginAmount >= debtAmount * minMarginLevel / ONE_MILLION;
     }
 
@@ -177,21 +178,34 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
         uint256 borrowReserve1 = (_totalSupply - retainSupply1) * status.realReserve1 / _totalSupply;
         uint256 borrowMaxAmount = (marginForOne ? borrowReserve0 : borrowReserve1);
         if (borrowMaxAmount > 1000) {
-            borrowAmount -= 1000;
+            borrowAmount = borrowMaxAmount - 1000;
         } else {
             borrowAmount = 0;
         }
-        marginMax = hook.getAmountIn(poolId, marginForOne, borrowMaxAmount);
+        if (borrowAmount > 0) {
+            marginMax = hook.getAmountIn(poolId, marginForOne, borrowAmount);
+        }
     }
 
     /// @inheritdoc IBorrowPositionManager
-    function borrow(MarginParams memory params) external payable ensure(params.deadline) returns (uint256, uint256) {
-        HookStatus memory _status = hook.getStatus(params.poolId);
-        Currency marginToken = params.marginForOne ? _status.key.currency1 : _status.key.currency0;
-        bool success = marginToken.transfer(msg.sender, address(this), params.marginAmount);
-        if (!success) revert MarginTransferFailed(params.marginAmount);
-        uint256 positionId = _borrowPositions[params.poolId][params.marginForOne][params.recipient];
-        // params = hook.margin(params);
+    function borrow(BorrowParams memory bParams) external payable ensure(bParams.deadline) returns (uint256, uint256) {
+        HookStatus memory _status = hook.getStatus(bParams.poolId);
+        Currency marginToken = bParams.marginForOne ? _status.key.currency1 : _status.key.currency0;
+        bool success = marginToken.transfer(msg.sender, address(this), bParams.marginAmount);
+        if (!success) revert MarginTransferFailed(bParams.marginAmount);
+        uint256 positionId = _borrowPositions[bParams.poolId][bParams.marginForOne][bParams.recipient];
+        MarginParams memory params = MarginParams({
+            poolId: bParams.poolId,
+            marginForOne: bParams.marginForOne,
+            leverage: 0,
+            marginAmount: bParams.marginAmount,
+            marginTotal: 0,
+            borrowAmount: bParams.borrowAmount,
+            borrowMinAmount: bParams.borrowMinAmount,
+            recipient: bParams.recipient,
+            deadline: bParams.deadline
+        });
+        params = hook.margin(params);
         uint256 rateLast = hook.marginFees().getBorrowRateCumulativeLast(_status, params.marginForOne);
         if (params.borrowAmount < params.borrowMinAmount) revert InsufficientBorrowReceived();
         if (!checkMinMarginLevel(params, _status)) revert InsufficientAmount(params.marginAmount);

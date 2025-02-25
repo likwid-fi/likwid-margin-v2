@@ -6,6 +6,7 @@ import {MarginHookManager} from "../../src/MarginHookManager.sol";
 import {MirrorTokenManager} from "../../src/MirrorTokenManager.sol";
 import {MarginLiquidity} from "../../src/MarginLiquidity.sol";
 import {MarginPositionManager} from "../../src/MarginPositionManager.sol";
+import {BorrowPositionManager} from "../../src/BorrowPositionManager.sol";
 import {MarginRouter} from "../../src/MarginRouter.sol";
 import {MarginOracle} from "../../src/MarginOracle.sol";
 import {MarginFees} from "../../src/MarginFees.sol";
@@ -57,6 +58,7 @@ contract DeployHelper is Test {
     MirrorTokenManager mirrorTokenManager;
     MarginLiquidity marginLiquidity;
     MarginPositionManager marginPositionManager;
+    BorrowPositionManager borrowPositionManager;
     MarginRouter swapRouter;
     MarginOracle marginOracle;
     MarginFees marginFees;
@@ -120,11 +122,17 @@ contract DeployHelper is Test {
 
         marginChecker = new MarginChecker(address(this));
         marginPositionManager = new MarginPositionManager(address(this), marginChecker);
+        borrowPositionManager = new BorrowPositionManager(address(this), marginChecker);
         tokenA.approve(address(marginPositionManager), type(uint256).max);
         tokenB.approve(address(marginPositionManager), type(uint256).max);
         tokenUSDT.approve(address(marginPositionManager), type(uint256).max);
         marginPositionManager.setHook(address(hookManager));
+        tokenA.approve(address(borrowPositionManager), type(uint256).max);
+        tokenB.approve(address(borrowPositionManager), type(uint256).max);
+        tokenUSDT.approve(address(borrowPositionManager), type(uint256).max);
+        borrowPositionManager.setHook(address(hookManager));
         hookManager.addPositionManager(address(marginPositionManager));
+        hookManager.addPositionManager(address(borrowPositionManager));
         hookManager.setMarginOracle(address(marginOracle));
         swapRouter = new MarginRouter(address(this), manager, hookManager);
         tokenA.approve(address(swapRouter), type(uint256).max);
