@@ -46,7 +46,7 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
         uint256 borrowAmount,
         bool marginForOne
     );
-    event Repay(
+    event RepayClose(
         PoolId indexed poolId,
         address indexed sender,
         uint256 positionId,
@@ -131,8 +131,8 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
             return 0;
         }
         uint256 repayAmount = uint256(_position.borrowAmount) * closeMillionth / ONE_MILLION;
-        uint256 releaseAmount = hook.getAmountIn(_position.poolId, !_position.marginForOne, repayAmount);
-        uint256 releaseTotal = uint256(_position.marginAmount);
+        uint256 releaseAmount = hook.getAmountOut(_position.poolId, _position.marginForOne, repayAmount);
+        uint256 releaseTotal = uint256(_position.marginAmount) * closeMillionth / ONE_MILLION;
         pnlAmount = int256(releaseTotal) - int256(releaseAmount);
     }
 
@@ -253,7 +253,7 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
         uint256 releaseMargin = uint256(_position.marginAmount) * repayAmount / borrowAmount;
         bool success = marginToken.transfer(address(this), msg.sender, releaseMargin);
         require(success, "RELEASE_TRANSFER_ERR");
-        emit Repay(_position.poolId, msg.sender, positionId, releaseMargin, repayAmount, repayRawAmount, pnlAmount);
+        emit RepayClose(_position.poolId, msg.sender, positionId, releaseMargin, repayAmount, repayRawAmount, pnlAmount);
         if (_position.borrowAmount == 0) {
             _burnPosition(positionId, BurnType.CLOSE);
         } else {
@@ -346,14 +346,12 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
         uint256 borrowAmount;
         uint256 liquidateValue;
         {
-            uint256 assetAmount;
             uint256 marginAmount;
             for (uint256 i = 0; i < params.positionIds.length; i++) {
                 if (liquidatedList[i]) {
                     uint256 positionId = params.positionIds[i];
                     BorrowPosition memory _position = inPositions[i];
                     marginAmount += _position.marginAmount;
-                    assetAmount += _position.marginAmount;
                     borrowAmount += borrowAmountList[i];
                     rawBorrowAmount += _position.rawBorrowAmount;
                     emit Liquidate(params.poolId, msg.sender, positionId, _position.marginAmount, borrowAmountList[i]);
@@ -366,7 +364,7 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
             uint256 protocolProfit;
             Currency marginToken;
             (marginToken, profit, protocolProfit) = liquidateProfit(marginAmount, params);
-            releaseAmount = assetAmount - profit - protocolProfit;
+            releaseAmount = marginAmount - profit - protocolProfit;
             if (marginToken == CurrencyLibrary.ADDRESS_ZERO) {
                 liquidateValue = releaseAmount;
             } else {

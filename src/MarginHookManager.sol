@@ -23,7 +23,6 @@ import {IMarginFees} from "./interfaces/IMarginFees.sol";
 import {IMarginLiquidity} from "./interfaces/IMarginLiquidity.sol";
 import {IMirrorTokenManager} from "./interfaces/IMirrorTokenManager.sol";
 import {IMarginOracleWriter} from "./interfaces/IMarginOracleWriter.sol";
-import {MarginPosition} from "./types/MarginPosition.sol";
 import {MarginParams} from "./types/MarginParams.sol";
 import {ReleaseParams} from "./types/ReleaseParams.sol";
 import {HookStatus} from "./types/HookStatus.sol";
@@ -87,7 +86,7 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
 
     mapping(PoolId => HookStatus) public hookStatusStore;
     mapping(address => bool) public positionManagers;
-    mapping(PoolId => uint256) public liquidityBlock;
+    mapping(PoolId => uint256) private liquidityBlock;
 
     IMarginFees public marginFees;
 
@@ -512,11 +511,8 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         if (params.leverage > 0) {
             uint256 marginReserves;
             {
-                uint256 uPoolId = marginLiquidity.getPoolId(params.poolId);
-                (uint256 _totalSupply, uint256 retainSupply0, uint256 retainSupply1) =
-                    marginLiquidity.getSupplies(uPoolId);
-                uint256 marginReserve0 = (_totalSupply - retainSupply0) * status.realReserve0 / _totalSupply;
-                uint256 marginReserve1 = (_totalSupply - retainSupply1) * status.realReserve1 / _totalSupply;
+                (uint256 marginReserve0, uint256 marginReserve1) =
+                    marginLiquidity.getFlowReserves(params.poolId, status);
                 marginReserves = params.marginForOne ? marginReserve1 : marginReserve0;
             }
             uint256 marginTotal = params.marginAmount * params.leverage;

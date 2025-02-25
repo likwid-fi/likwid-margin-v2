@@ -13,6 +13,7 @@ import {MarginChecker} from "../src/MarginChecker.sol";
 import {MarginOracle} from "../src/MarginOracle.sol";
 import {MarginFees} from "../src/MarginFees.sol";
 import {MarginPositionManager} from "../src/MarginPositionManager.sol";
+import {BorrowPositionManager} from "../src/BorrowPositionManager.sol";
 import {MarginRouter} from "../src/MarginRouter.sol";
 
 contract DeployAllScript is Script {
@@ -40,6 +41,9 @@ contract DeployAllScript is Script {
         marginFees = new MarginFees(owner);
         console2.log("marginFees:", address(marginFees));
 
+        BorrowPositionManager borrowPositionManager = new BorrowPositionManager(owner, marginChecker);
+        console2.log("borrowPositionManager", address(borrowPositionManager));
+
         MarginPositionManager marginPositionManager = new MarginPositionManager(owner, marginChecker);
         console2.log("marginPositionManager", address(marginPositionManager));
         bytes memory constructorArgs =
@@ -63,7 +67,9 @@ contract DeployAllScript is Script {
         // verify proper create2 usage
         require(deployedHook == hookAddress, "DeployScript: hook address mismatch");
         marginPositionManager.setHook(hookAddress);
+        borrowPositionManager.setHook(hookAddress);
         MarginHookManager(hookAddress).addPositionManager(address(marginPositionManager));
+        MarginHookManager(hookAddress).addPositionManager(address(borrowPositionManager));
         MarginHookManager(hookAddress).setMarginOracle(address(marginOracle));
         console2.log("hookAddress:", hookAddress);
         marginLiquidity.addHooks(hookAddress);

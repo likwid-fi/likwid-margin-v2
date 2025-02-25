@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 import {ERC6909Claims} from "v4-core/ERC6909Claims.sol";
 import {Owned} from "solmate/src/auth/Owned.sol";
 import {PoolId} from "v4-core/types/PoolId.sol";
+
+import {HookStatus} from "./types/HookStatus.sol";
 import {Math} from "./libraries/Math.sol";
 import {IMarginLiquidity} from "./interfaces/IMarginLiquidity.sol";
 
@@ -110,6 +112,18 @@ contract MarginLiquidity is IMarginLiquidity, ERC6909Claims, Owned {
         returns (uint256 totalSupply, uint256 retainSupply0, uint256 retainSupply1)
     {
         (totalSupply, retainSupply0, retainSupply1) = _getPoolSupplies(msg.sender, uPoolId);
+    }
+
+    function getFlowReserves(PoolId poolId, HookStatus memory status)
+        external
+        view
+        onlyHook
+        returns (uint256 reserve0, uint256 reserve1)
+    {
+        uint256 uPoolId = _getPoolId(poolId);
+        (uint256 totalSupply, uint256 retainSupply0, uint256 retainSupply1) = _getPoolSupplies(msg.sender, uPoolId);
+        reserve0 = (totalSupply - retainSupply0) * status.realReserve0 / totalSupply;
+        reserve1 = (totalSupply - retainSupply1) * status.realReserve1 / totalSupply;
     }
 
     // ******************** EXTERNAL CALL ********************

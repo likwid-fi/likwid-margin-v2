@@ -11,7 +11,7 @@ struct BorrowPosition {
     bool marginForOne;
     /// @notice marginAmount1 + ... + marginAmountN
     uint128 marginAmount;
-    /// @notice The borrow amount of the margin position including interest.
+    /// @notice The borrow amount of the borrow position including interest.
     uint128 borrowAmount;
     /// @notice The raw amount of borrowed tokens.
     uint128 rawBorrowAmount;
