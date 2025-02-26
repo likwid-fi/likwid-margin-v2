@@ -29,6 +29,8 @@ import {HookStatus} from "./types/HookStatus.sol";
 import {BalanceStatus} from "./types/BalanceStatus.sol";
 import {AddLiquidityParams, RemoveLiquidityParams} from "./types/LiquidityParams.sol";
 
+import {console} from "forge-std/console.sol";
+
 contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
     using UQ112x112 for uint224;
     using UQ112x112 for uint112;
@@ -43,15 +45,6 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
     error InsufficientLiquidityBurnt();
     error NotPositionManager();
     error PairNotExists();
-
-    event Initialize(
-        PoolId indexed id,
-        Currency indexed currency0,
-        Currency indexed currency1,
-        uint24 fee,
-        int24 tickSpacing,
-        IHooks hooks
-    );
 
     event Mint(
         PoolId indexed poolId,
@@ -152,7 +145,11 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         amountOut = _getAmountOut(status, zeroForOne, amountIn);
     }
 
-    function initialize(PoolKey calldata key) external {
+    // ******************** HOOK FUNCTIONS ********************
+
+    function beforeInitialize(address, PoolKey calldata key, uint160) external override returns (bytes4) {
+        console.log("beforeInitialize");
+        if (address(key.hooks) != address(this)) revert InvalidInitialization();
         PoolId id = key.toId();
         HookStatus memory status;
         status.key = key;
@@ -160,14 +157,6 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
         status.rate1CumulativeLast = ONE_BILLION;
         status.blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         hookStatusStore[id] = status;
-        poolManager.initialize(key, SQRT_RATIO_1_1);
-        emit Initialize(id, key.currency0, key.currency1, key.fee, key.tickSpacing, key.hooks);
-    }
-
-    // ******************** HOOK FUNCTIONS ********************
-
-    function beforeInitialize(address, PoolKey calldata key, uint160) external view override returns (bytes4) {
-        if (address(key.hooks) != address(this)) revert InvalidInitialization();
         return BaseHook.beforeInitialize.selector;
     }
 
@@ -220,7 +209,7 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
-            beforeInitialize: false,
+            beforeInitialize: true,
             afterInitialize: false,
             beforeAddLiquidity: true, // -- disable v4 liquidity with a revert -- //
             beforeRemoveLiquidity: false,

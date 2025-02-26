@@ -17,7 +17,6 @@ import {MarginRouter} from "../src/MarginRouter.sol";
 
 contract DeployAllScript is Script {
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
-    address manager = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
     address owner = 0x35D3F3497eC612b3Dd982819F95cA98e6a404Ce1;
     MirrorTokenManager mirrorTokenManager;
     MarginLiquidity marginLiquidity;
@@ -25,18 +24,31 @@ contract DeployAllScript is Script {
     MarginOracle marginOracle;
     MarginFees marginFees;
 
+    error NotFoundManager();
+
     function setUp() public {}
+
+    function _getManager(uint256 chainId) internal pure returns (address manager) {
+        if (chainId == 11155111) {
+            manager = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
+        }
+    }
 
     function run() public {
         vm.startBroadcast();
+        address manager = _getManager(block.chainid);
+        if (manager == address(0)) {
+            revert NotFoundManager();
+        }
         mirrorTokenManager = new MirrorTokenManager(owner);
         console2.log("mirrorTokenManager:", address(mirrorTokenManager));
+        marginOracle = new MarginOracle();
+        console2.log("marginOracle:", address(marginOracle));
+        console2.log("poolManager:", manager);
         marginLiquidity = new MarginLiquidity(owner);
         console2.log("marginLiquidity:", address(marginLiquidity));
         marginChecker = new MarginChecker(owner);
         console2.log("marginChecker:", address(marginChecker));
-        marginOracle = new MarginOracle();
-        console2.log("marginOracle:", address(marginOracle));
         marginFees = new MarginFees(owner);
         console2.log("marginFees:", address(marginFees));
 
@@ -45,8 +57,10 @@ contract DeployAllScript is Script {
         bytes memory constructorArgs =
             abi.encode(owner, manager, address(mirrorTokenManager), address(marginLiquidity), address(marginFees));
 
-        uint160 flags =
-            uint160(Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG);
+        uint160 flags = uint160(
+            Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_SWAP_FLAG
+                | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
+        );
 
         // Mine a salt that will produce a hook address with the correct flags
         bytes memory creationCode = vm.getCode("MarginHookManager.sol:MarginHookManager");

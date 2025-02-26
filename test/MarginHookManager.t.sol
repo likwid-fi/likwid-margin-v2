@@ -35,6 +35,17 @@ contract MarginHookManagerTest is DeployHelper {
         deployHookAndRouter();
     }
 
+    function testInitialize() public {
+        PoolKey memory keyA = PoolKey({
+            currency0: CurrencyLibrary.ADDRESS_ZERO,
+            currency1: Currency.wrap(address(tokenA)),
+            fee: 3000,
+            tickSpacing: 1,
+            hooks: hookManager
+        });
+        manager.initialize(keyA, SQRT_RATIO_1_1);
+    }
+
     function test_hook_liquidity_native() public {
         uint256 amount0 = 1 ether;
         uint256 amount1 = 1 ether;
