@@ -9,7 +9,7 @@ import {BeforeSwapDelta, toBeforeSwapDelta} from "v4-core/types/BeforeSwapDelta.
 import {Currency, CurrencyLibrary} from "v4-core/types/Currency.sol";
 import {Hooks} from "v4-core/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
-import {IHooks} from "v4-core/interfaces/IPoolManager.sol";
+import {IHooks} from "v4-core/interfaces/IHooks.sol";
 import {SafeCast} from "v4-core/libraries/SafeCast.sol";
 // Solmate
 import {Owned} from "solmate/src/auth/Owned.sol";
@@ -28,8 +28,6 @@ import {ReleaseParams} from "./types/ReleaseParams.sol";
 import {HookStatus} from "./types/HookStatus.sol";
 import {BalanceStatus} from "./types/BalanceStatus.sol";
 import {AddLiquidityParams, RemoveLiquidityParams} from "./types/LiquidityParams.sol";
-
-import {console} from "forge-std/console.sol";
 
 contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
     using UQ112x112 for uint224;
@@ -148,7 +146,6 @@ contract MarginHookManager is IMarginHookManager, BaseHook, Owned {
     // ******************** HOOK FUNCTIONS ********************
 
     function beforeInitialize(address, PoolKey calldata key, uint160) external override returns (bytes4) {
-        console.log("beforeInitialize");
         if (address(key.hooks) != address(this)) revert InvalidInitialization();
         PoolId id = key.toId();
         HookStatus memory status;
