@@ -79,6 +79,8 @@ contract DeployAllScript is Script {
 
         // verify proper create2 usage
         require(deployedHook == hookAddress, "DeployScript: hook address mismatch");
+        borrowPositionManager.setHook(hookAddress);
+        MarginHookManager(hookAddress).addPositionManager(address(borrowPositionManager));
         marginPositionManager.setHook(hookAddress);
         MarginHookManager(hookAddress).addPositionManager(address(marginPositionManager));
         MarginHookManager(hookAddress).setMarginOracle(address(marginOracle));

@@ -9,9 +9,11 @@ import {MarginPosition} from "../src/types/MarginPosition.sol";
 import {MarginOracle} from "../src/MarginOracle.sol";
 import {MarginLiquidity} from "../src/MarginLiquidity.sol";
 import {MarginHookManager} from "../src/MarginHookManager.sol";
+import {BorrowPositionManager} from "../src/BorrowPositionManager.sol";
 import {IERC20Minimal} from "v4-core/interfaces/external/IERC20Minimal.sol";
 
 interface IMarginPositionManager {
+    function setHook(address _hook) external;
     function getHook() external view returns (address _hook);
     function margin(MarginParams memory params) external payable returns (uint256, uint256);
     function getPosition(uint256 positionId) external view returns (MarginPosition memory _position);
@@ -26,6 +28,8 @@ contract TestsScript is Script {
 
     address user = 0x35D3F3497eC612b3Dd982819F95cA98e6a404Ce1;
     address marginPositionManager = 0x913B98B271889D3fB4D375C181FC2E58f17EC6C5;
+    address hookAddress = 0xC5fc0e632D69E87D337e38E61a63446775400888;
+    address borrowPositionManager = 0x2A27BF4746ad5FF4e410379641eb47Ef428A2D20;
 
     function setUp() public {}
 
@@ -55,14 +59,16 @@ contract TestsScript is Script {
         // console2.log("pnlMinAmount", pnlMinAmount);
         // MarginPosition memory _position = IMarginPositionManager(marginPositionManager).getPosition(4);
         // console2.log("position", _position.marginAmount + _position.marginTotal);
-        PoolId poolId = PoolId.wrap(0x52c4648f1db7040bdf0c13c4c7bdedf9a2edf4a1e6dfd899b06ff7f877794fb3);
-        address hookAddress = IMarginPositionManager(marginPositionManager).getHook();
-        console2.log("hookAddress", hookAddress);
-        (uint256 _reserve0, uint256 _reserve1) = MarginHookManager(hookAddress).getReserves(poolId);
-        console2.log("reserves", _reserve0, _reserve1);
-        address marginOracle = MarginHookManager(hookAddress).marginOracle();
-        (uint224 reserves,) = MarginOracle(marginOracle).observeNow(poolId, hookAddress);
-        console2.log("reserves", marginOracle, reserves.getReverse0(), reserves.getReverse1());
+        // PoolId poolId = PoolId.wrap(0x52c4648f1db7040bdf0c13c4c7bdedf9a2edf4a1e6dfd899b06ff7f877794fb3);
+        // address hookAddress = IMarginPositionManager(marginPositionManager).getHook();
+        // console2.log("hookAddress", hookAddress);
+        // (uint256 _reserve0, uint256 _reserve1) = MarginHookManager(hookAddress).getReserves(poolId);
+        // console2.log("reserves", _reserve0, _reserve1);
+        // address marginOracle = MarginHookManager(hookAddress).marginOracle();
+        // (uint224 reserves,) = MarginOracle(marginOracle).observeNow(poolId, hookAddress);
+        // console2.log("reserves", marginOracle, reserves.getReverse0(), reserves.getReverse1());
+        MarginHookManager(hookAddress).addPositionManager(borrowPositionManager);
+        IMarginPositionManager(borrowPositionManager).setHook(hookAddress);
         vm.stopBroadcast();
     }
 }
