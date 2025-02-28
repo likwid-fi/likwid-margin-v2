@@ -14,10 +14,12 @@ import {MarginOracle} from "../src/MarginOracle.sol";
 import {MarginFees} from "../src/MarginFees.sol";
 import {MarginPositionManager} from "../src/MarginPositionManager.sol";
 import {MarginRouter} from "../src/MarginRouter.sol";
+import {BorrowPositionManager} from "../src/BorrowPositionManager.sol";
 
 contract DeployAllScript is Script {
+    error ManagerNotExist();
+
     address constant CREATE2_DEPLOYER = address(0x4e59b44847b379578588920cA78FbF26c0B4956C);
-    address manager = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
     address owner = 0x35D3F3497eC612b3Dd982819F95cA98e6a404Ce1;
     MirrorTokenManager mirrorTokenManager;
     MarginLiquidity marginLiquidity;
@@ -27,8 +29,20 @@ contract DeployAllScript is Script {
 
     function setUp() public {}
 
-    function run() public {
+    function _getManager(uint256 chainId) internal pure returns (address manager) {
+        if (chainId == 11155111) {
+            manager = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
+        }
+    }
+
+    function run(uint256 chainId) public {
         vm.startBroadcast();
+        console.log(chainId);
+        address manager = _getManager(chainId);
+        if (manager == address(0)) {
+            revert ManagerNotExist();
+        }
+        console2.log("poolManager:", manager);
         mirrorTokenManager = new MirrorTokenManager(owner);
         console2.log("mirrorTokenManager:", address(mirrorTokenManager));
         marginLiquidity = new MarginLiquidity(owner);
@@ -39,6 +53,9 @@ contract DeployAllScript is Script {
         console2.log("marginOracle:", address(marginOracle));
         marginFees = new MarginFees(owner);
         console2.log("marginFees:", address(marginFees));
+
+        BorrowPositionManager borrowPositionManager = new BorrowPositionManager(owner, marginChecker);
+        console2.log("borrowPositionManager", address(borrowPositionManager));
 
         MarginPositionManager marginPositionManager = new MarginPositionManager(owner, marginChecker);
         console2.log("marginPositionManager", address(marginPositionManager));

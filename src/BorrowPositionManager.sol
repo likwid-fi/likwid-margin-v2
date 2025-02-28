@@ -183,7 +183,7 @@ contract BorrowPositionManager is IBorrowPositionManager, ERC721, Owned {
             borrowAmount = 0;
         }
         if (borrowAmount > 0) {
-            marginMax = hook.getAmountIn(poolId, marginForOne, borrowAmount);
+            marginMax = hook.getAmountIn(poolId, !marginForOne, borrowAmount);
         }
     }
 
